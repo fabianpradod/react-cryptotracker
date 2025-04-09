@@ -3,7 +3,6 @@ Real‑time cryptocurrency price dashboard built with React &amp; Alpha Vantag
 
 ## 🚀 Live Demo
 
-[Add your deployed link here]
 
 ## 🛠️ Features
 
@@ -11,7 +10,6 @@ Real‑time cryptocurrency price dashboard built with React &amp; Alpha Vantag
 - Search any coin by name or symbol  
 - Historical price charts (7d, 30d, 1y)  
 - Dark/light mode toggle  
-- Mobile‑responsive design
 
 ## 🧰 Tech Stack
 
