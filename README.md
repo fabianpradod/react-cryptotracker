@@ -1,5 +1,5 @@
 # react-cryptotracker
-Real‑time cryptocurrency price dashboard built with React &amp; Alpha Vantage API.
+Real‑time cryptocurrency price dashboard built with React, JavaScript, HTML, CSS and Abyiss API
 
 ## 🚀 Live Demo
 
