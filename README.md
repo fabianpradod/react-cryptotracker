@@ -2,8 +2,7 @@
 Real‑time cryptocurrency price dashboard built with React, JavaScript, HTML, CSS and Abyiss API
 
 ## 🚀 Live Demo
-
-[Add your deployed link here]
+https://statuesque-tulumba-7fb372.netlify.app/ 
 
 ## 🛠️ Features
 
