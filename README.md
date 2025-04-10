@@ -4,7 +4,7 @@ Real-time cryptocurrency price dashboard built with React, JavaScript, HTML, CSS
 
 ## 🚀 Live Demo
 
-[View Live Demo]([https://react-cryptotracker.netlify.app](https://statuesque-tulumba-7fb372.netlify.app/))
+[View Live Demo]([https://statuesque-tulumba-7fb372.netlify.app/])
 
 ## 🛠️ Features
 
