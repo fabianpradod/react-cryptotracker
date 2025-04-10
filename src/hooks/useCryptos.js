@@ -21,7 +21,6 @@ export function useCryptos() {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     loadCryptos();
   }, [loadCryptos]);

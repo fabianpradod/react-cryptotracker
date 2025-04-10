@@ -1,98 +1,105 @@
-import React from 'react';
-import { useCryptos } from './hooks/useCryptos';
-import './App.css';
+import { useState, useEffect } from 'react';
+import { Sun, Moon, Search } from 'lucide-react';
+import './index.css';
 
-function App() {
-  const { cryptos, loading, error, refresh, lastUpdated } = useCryptos();
+export default function CryptoTracker() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [page, setPage] = useState('landing');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Mock data
+  const coins = [
+    { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', price: 54321.98, change24h: 2.45 },
+    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', price: 2543.76, change24h: -1.20 },
+    { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', price: 345.87, change24h: 0.35 },
+    { id: 'ripple', symbol: 'XRP', name: 'Ripple', price: 0.52, change24h: -0.15 },
+    { id: 'cardano', symbol: 'ADA', name: 'Cardano', price: 0.43, change24h: 1.23 },
+  ];
+
+  // Apply dark-mode class to root element
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-mode', darkMode);
+  }, [darkMode]);
+
+  // Filtered list
+  const filtered = coins.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div style={{ 
-      padding: '2rem', 
-      maxWidth: '800px', 
-      margin: '0 auto',
-      color: '#000' 
-    }}>
-      <header style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '20px',
-        color: '#000' 
-      }}>
-        <h1>Top Cryptocurrencies (USD)</h1>
-        <button 
-          onClick={refresh} 
-          disabled={loading}
-          style={{ 
-            padding: '8px 16px',
-            backgroundColor: '#f0f0f0',
-            color: '#000'
-          }}
-        >
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
-      </header>
-      
-      {error && <p style={{ color: 'red' }}>Error: {error.message}</p>}
-      
-      {loading && <p style={{ color: '#000' }}>Loading cryptocurrencies…</p>}
-      
-      {!loading && cryptos.length === 0 && (
-        <p style={{ color: '#000' }}>No cryptocurrency data available.</p>
+    <div id="root">
+      {/* Dark/Light Toggle */}
+      <div
+        className="dark-mode-toggle"
+        onClick={() => setDarkMode(prev => !prev)}
+        aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+      </div>
+
+      {/* Landing Page */}
+      {page === 'landing' && (
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Crypto Tracker</h1>
+          <p style={{ marginBottom: '1.5rem' }}>Made by: Fabian Prado Dluzniewski</p>
+          <button className="button" onClick={() => setPage('tracker')}>Start Tracking</button>
+        </div>
       )}
 
-      {!loading && cryptos.length > 0 && (
-        <>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {cryptos.map(c => (
-              <li key={c.symbol} style={{ 
-                margin: '10px 0', 
-                padding: '15px', 
-                border: '1px solid #ddd', 
-                borderRadius: '5px',
-                backgroundColor: c.error ? '#fff5f5' : '#f5fffa',
-                color: '#000' 
-              }}>
-                {c.error ? (
-                  <>
-                    <strong>{c.symbol}:</strong> Unable to load price data
-                    {c.errorMsg && <div style={{ color: 'red', fontSize: '0.9em', marginTop: '5px' }}>{c.errorMsg}</div>}
-                  </>
-                ) : (
-                  <>
-                    <strong>{c.symbol}:</strong> ${c.price.toFixed(2)}{' '}
-                    <em style={{ color: '#444' }}>({new Date(c.lastRefreshed).toLocaleTimeString()})</em>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-          
-          {lastUpdated && (
-            <div style={{ textAlign: 'right', fontSize: '0.8em', color: '#444', marginTop: '10px' }}>
-              Last updated: {lastUpdated.toLocaleTimeString()}
+      {/* Tracker Page */}
+      {page === 'tracker' && (
+        <div className="tracker">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2>Cryptocurrency Tracker</h2>
+            <button className="button" onClick={() => setPage('landing')}>Back to Home</button>
+          </div>
+
+          <div className="card table-card">
+            <div className="search-wrapper">
+              <Search size={20} className="icon" />
+              <input
+                type="text"
+                placeholder="Search by name or symbol..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
             </div>
-          )}
-        </>
+
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Name</th>
+                  <th style={{ textAlign: 'right' }}>Price (USD)</th>
+                  <th style={{ textAlign: 'right' }}>24h Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(coin => (
+                  <tr key={coin.id}>
+                    <td>{coin.symbol}</td>
+                    <td>{coin.name}</td>
+                    <td style={{ textAlign: 'right' }}>${coin.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td
+                      style={{ textAlign: 'right' }}
+                      className={coin.change24h >= 0 ? 'positive' : 'negative'}
+                    >
+                      {coin.change24h > 0 ? '+' : ''}{coin.change24h}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filtered.length === 0 && (
+              <div className="card" style={{ textAlign: 'center' }}>
+                No cryptocurrencies found matching "{searchQuery}"
+              </div>
+            )}
+          </div>
+        </div>
       )}
-      
-      <div style={{ 
-        marginTop: '30px', 
-        fontSize: '0.85em', 
-        color: '#444', 
-        padding: '15px', 
-        backgroundColor: '#f9f9f9', 
-        borderRadius: '5px' 
-      }}>
-        <p><strong>Note:</strong> Alpha Vantage API has the following limitations:</p>
-        <ul>
-          <li>Free tier: 5 requests/minute, 500 requests/day</li>
-          <li>Some cryptocurrency symbols may not be supported</li>
-        </ul>
-        <p>To reduce rate limit issues, this app processes requests sequentially with delays between them.</p>
-      </div>
     </div>
   );
 }
-
-export default App;
