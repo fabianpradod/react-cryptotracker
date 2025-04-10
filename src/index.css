@@ -187,3 +187,57 @@ body {
 .select-title {
   margin-bottom: 1.5rem;
 }
+/* Search inputs on select & overview pages */
+.search-wrapper input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+/* Table cell truncation */
+.table td, .table th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Secondary button (back & exchanges) */
+.btn-secondary {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--text-color);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.dark-mode .btn-secondary {
+  background-color: var(--text-color);
+  color: var(--bg-color);
+  border: 1px solid var(--bg-color);
+}
+
+/* Position back button */
+.back-button {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+}
+
+/* Exchange buttons */
+.exchange-button {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+/* More space under select title */
+.select-title {
+  margin-bottom: 1.5rem;
+}
