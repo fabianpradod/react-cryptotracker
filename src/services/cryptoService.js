@@ -1,64 +1,45 @@
-/**
- * Fetches cryptocurrency data from Alpha Vantage API with rate limiting
- */
-export async function fetchCryptos(symbols = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOT']) {
-  const results = [];
+// src/services/cryptoService.js
+const API_KEY = import.meta.env.VITE_ABYISS_API_KEY;
+const BASE = 'https://api.abyiss.com/v2/cex';
 
-  for (const symbol of symbols) {
-    try {
-      const url = `${BASE_URL}?function=CURRENCY_EXCHANGE_RATE&from_currency=${symbol}&to_currency=USD&apikey=${API_KEY}`;
-      console.log(`Fetching data for ${symbol}`);
+/** Fetch all exchanges */
+export async function fetchExchanges() {
+  const res = await fetch(`${BASE}/exchanges?apiKey=${API_KEY}`);
+  return res.json(); // [{ name, id }, …]
+}
 
-      const response = await fetch(url);
+/** Fetch all markets (pairs) for an exchange */
+export async function fetchMarkets(exchangeId) {
+  const res = await fetch(
+    `${BASE}/${exchangeId}/markets?apiKey=${API_KEY}`
+  );
+  return res.json(); // ["BTC/USD","ETH/USD",…]
+}
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+/** Fetch current price for a given pair */
+export async function fetchCurrentPrice(exchangeId, market) {
+  const res = await fetch(
+    `${BASE}/${exchangeId}/${market.replace('/','-')}/currentprice?apiKey=${API_KEY}`
+  );
+  return res.json(); 
+  /* {
+       exchange,  // e.g. "AscendEX"
+       market,    // e.g. "BTC/USD"
+       timestamp,
+       price
+     }
+  */
+}
 
-      const data = await response.json();
-      console.log(`Response for ${symbol}:`, data);
-
-      if (data.Note) {
-        console.error('API limit reached:', data.Note);
-        results.push({
-          symbol,
-          price: 0,
-          lastRefreshed: new Date().toISOString(),
-          error: true,
-        });
-        continue;
-      }
-
-      // Validate response format
-      const exchangeRate = data['Realtime Currency Exchange Rate'];
-      if (!exchangeRate || !exchangeRate['5. Exchange Rate']) {
-        console.error(`Invalid response format for ${symbol}:`, data);
-        results.push({
-          symbol,
-          price: 0,
-          lastRefreshed: new Date().toISOString(),
-          error: true,
-        });
-        continue;
-      }
-
-      // Extract relevant data
-      results.push({
-        symbol,
-        price: parseFloat(exchangeRate['5. Exchange Rate']),
-        lastRefreshed: exchangeRate['6. Last Refreshed'],
-        error: false,
-      });
-    } catch (error) {
-      console.error(`Error fetching data for ${symbol}:`, error.message);
-      results.push({
-        symbol,
-        price: 0,
-        lastRefreshed: new Date().toISOString(),
-        error: true,
-      });
-    }
-  }
-
-  return results;
+/** Fetch recent trades for a given pair */
+export async function fetchTrades(exchangeId, market) {
+  const res = await fetch(
+    `${BASE}/${exchangeId}/${market.replace('/','-')}/trades?apiKey=${API_KEY}`
+  );
+  return res.json(); 
+  /* {
+       exchange, market,
+       trades: [{ timestamp, price, size, cost, side }, …]
+     }
+  */
 }
