@@ -1,25 +1,23 @@
-const BASE_URL = 'https://www.alphavantage.co/query';
-const API_KEY = import.meta.env.VITE_ALPHA_VANTAGE_KEY;
-
-// Helper function to delay execution (to avoid rate limits)
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 /**
  * Fetches cryptocurrency data from Alpha Vantage API with rate limiting
  */
-export async function fetchCryptos(symbols = ['BTC','ETH','BNB','XRP','ADA','DOT']) {
+export async function fetchCryptos(symbols = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOT']) {
   const results = [];
-  
-  // Process symbols one at a time with delay between requests
+
   for (const symbol of symbols) {
     try {
       const url = `${BASE_URL}?function=CURRENCY_EXCHANGE_RATE&from_currency=${symbol}&to_currency=USD&apikey=${API_KEY}`;
       console.log(`Fetching data for ${symbol}`);
-      
+
       const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
       const data = await response.json();
-      
-      // Handle rate limit messages
+      console.log(`Response for ${symbol}:`, data);
+
       if (data.Note) {
         console.error('API limit reached:', data.Note);
         results.push({
@@ -27,55 +25,40 @@ export async function fetchCryptos(symbols = ['BTC','ETH','BNB','XRP','ADA','DOT
           price: 0,
           lastRefreshed: new Date().toISOString(),
           error: true,
-          errorMsg: 'API rate limit exceeded'
         });
+        continue;
       }
-      // Handle error messages
-      else if (data['Error Message']) {
-        console.error('API error:', data['Error Message']);
+
+      // Validate response format
+      const exchangeRate = data['Realtime Currency Exchange Rate'];
+      if (!exchangeRate || !exchangeRate['5. Exchange Rate']) {
+        console.error(`Invalid response format for ${symbol}:`, data);
         results.push({
           symbol,
           price: 0,
           lastRefreshed: new Date().toISOString(),
           error: true,
-          errorMsg: data['Error Message']
         });
+        continue;
       }
-      // Process successful response
-      else {
-        const info = data['Realtime Currency Exchange Rate'];
-        if (!info) {
-          results.push({
-            symbol,
-            price: 0,
-            lastRefreshed: new Date().toISOString(),
-            error: true,
-            errorMsg: 'Invalid response format'
-          });
-        } else {
-          results.push({
-            symbol,
-            price: parseFloat(info['5. Exchange Rate']),
-            lastRefreshed: info['6. Last Refreshed'],
-            error: false
-          });
-        }
-      }
-      
-      // Add delay between requests to avoid hitting rate limits
-      await delay(1500); 
-      
-    } catch (err) {
-      console.error(`Error fetching ${symbol}:`, err);
+
+      // Extract relevant data
+      results.push({
+        symbol,
+        price: parseFloat(exchangeRate['5. Exchange Rate']),
+        lastRefreshed: exchangeRate['6. Last Refreshed'],
+        error: false,
+      });
+    } catch (error) {
+      console.error(`Error fetching data for ${symbol}:`, error.message);
       results.push({
         symbol,
         price: 0,
         lastRefreshed: new Date().toISOString(),
         error: true,
-        errorMsg: err.message
       });
     }
   }
-  
+
   return results;
 }
