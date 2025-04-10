@@ -3,6 +3,7 @@ Real‑time cryptocurrency price dashboard built with React &amp; Alpha Vantag
 
 ## 🚀 Live Demo
 
+[Add your deployed link here]
 
 ## 🛠️ Features
 
@@ -10,6 +11,7 @@ Real‑time cryptocurrency price dashboard built with React &amp; Alpha Vantag
 - Search any coin by name or symbol  
 - Historical price charts (7d, 30d, 1y)  
 - Dark/light mode toggle  
+- Mobile‑responsive design
 
 ## 🧰 Tech Stack
 
@@ -18,8 +20,3 @@ Real‑time cryptocurrency price dashboard built with React &amp; Alpha Vantag
 - **CSS Modules** or **Tailwind CSS**  
 - **Recharts** for charting  
 - **Alpha Vantage** API for crypto data  
-
-1. Clone the repo  
-   ```bash
-   git clone https://github.com/fabianpradod/react-cryptotracker
-   cd react-cryptotracker
