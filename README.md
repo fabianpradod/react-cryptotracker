@@ -7,16 +7,12 @@ Real‑time cryptocurrency price dashboard built with React, JavaScript, HTML, C
 
 ## 🛠️ Features
 
-- View top 10 cryptocurrencies by market cap  
-- Search any coin by name or symbol  
-- Historical price charts (7d, 30d, 1y)  
-- Dark/light mode toggle  
-- Mobile‑responsive design
+- Search any exchange/coin by name or symbol  
+- Dark/light mode toggle
 
 ## 🧰 Tech Stack
 
 - **React** (create‑react‑app)  
 - **JavaScript (ES6+)**  
 - **CSS Modules** or **Tailwind CSS**  
-- **Recharts** for charting  
-- **Alpha Vantage** API for crypto data  
+- **Abyiss** API for crypto data  
