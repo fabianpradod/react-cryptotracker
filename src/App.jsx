@@ -18,33 +18,68 @@ export default function App() {
   // --- Page navigation state ---
   const [page, setPage] = useState('landing'); // 'landing' | 'select' | 'overview' | 'trades'
   const [selectedExchange, setSelectedExchange] = useState(null);
-  const [selectedMarket, setSelectedMarket]     = useState(null);
+  const [selectedMarket, setSelectedMarket] = useState(null);
 
   // --- Data + UI state ---
   const [exchanges, setExchanges] = useState([]);
+  const [validExchanges, setValidExchanges] = useState([]); // Only exchanges with markets
   const [priceData, setPriceData] = useState([]); // overview rows
-  const [trades, setTrades]       = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
+  const [trades, setTrades] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [exchangesLoading, setExchangesLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // --- Search filters ---
   const [exchangeQuery, setExchangeQuery] = useState('');
-  const [marketQuery, setMarketQuery]     = useState('');
+  const [marketQuery, setMarketQuery] = useState('');
 
-  // 1) Load exchanges on mount
+  // 1) Load exchanges and check for markets when going to select page
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const data = await fetchExchanges();
-        setExchanges(data);
-      } catch (e) {
-        setError('Failed to load exchanges');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    if (page === 'select' && validExchanges.length === 0) {
+      (async () => {
+        setExchangesLoading(true);
+        try {
+          const data = await fetchExchanges();
+          setExchanges(data);
+          
+          // Process exchanges in batches to avoid overwhelming the API
+          const batchSize = 5;
+          const validExchangesList = [];
+          
+          // Process exchanges in batches of 5
+          for (let i = 0; i < data.length; i += batchSize) {
+            const batch = data.slice(i, i + batchSize);
+            
+            // Check each exchange in the batch in parallel
+            const batchResults = await Promise.all(
+              batch.map(async (ex) => {
+                try {
+                  const markets = await fetchMarkets(ex.id);
+                  if (markets && markets.length > 0) {
+                    return ex; // Return the exchange if it has markets
+                  }
+                  return null; // Skip exchanges without markets
+                } catch (e) {
+                  console.error(`Error checking markets for ${ex.name}:`, e);
+                  return null;
+                }
+              })
+            );
+            
+            // Add valid exchanges from this batch to our list
+            validExchangesList.push(...batchResults.filter(ex => ex !== null));
+            
+            // Update state incrementally to show progress
+            setValidExchanges([...validExchangesList]);
+          }
+        } catch (e) {
+          setError('Failed to load exchanges');
+        } finally {
+          setExchangesLoading(false);
+        }
+      })();
+    }
+  }, [page, validExchanges.length]);
 
   // 2) When an exchange is selected → load markets + price overview
   useEffect(() => {
@@ -54,25 +89,37 @@ export default function App() {
       try {
         const ex = exchanges.find(e => e.name === selectedExchange);
         const markets = await fetchMarkets(ex.id);
+        
         // If no markets, clear overview
         if (markets.length === 0) {
           setPriceData([]);
+          setLoading(false);
           return;
         }
+        
         // Fetch first 20 prices in parallel
-        const prices = await Promise.all(
-          markets.slice(0, 20).map(async m => {
+        const pricePromises = markets.slice(0, 20).map(async m => {
+          try {
             const d = await fetchCurrentPrice(ex.id, m);
-            return {
-              id: m,
-              exchange: ex.name,
-              symbol: m.split('/')[0],
-              name: m.split('/')[0],
-              price: d.price
-            };
-          })
-        );
-        setPriceData(prices);
+            if (d.price !== 0) { // Only include if price is non-zero
+              return {
+                id: m,
+                exchange: ex.name,
+                symbol: m.split('/')[0],
+                name: m.split('/')[0],
+                price: d.price
+              };
+            }
+            return null; // Skip this market if price is 0
+          } catch (e) {
+            console.error(`Failed to load price for ${m}`, e);
+            return null;
+          }
+        });
+        
+        const prices = await Promise.all(pricePromises);
+        // Filter out null values (markets without valid price data)
+        setPriceData(prices.filter(p => p !== null));
       } catch (e) {
         setError('Failed to load markets');
       } finally {
@@ -118,17 +165,18 @@ export default function App() {
     </button>
   );
 
-  // Filtered lists based on search queries
-  const filteredExchanges = exchanges.filter(e =>
+  // Filtered exchanges based on search query
+  const filteredExchanges = validExchanges.filter(e =>
     e.name.toLowerCase().includes(exchangeQuery.toLowerCase())
   );
+
   const filteredMarkets = priceData.filter(p =>
     p.symbol.toLowerCase().includes(marketQuery.toLowerCase()) ||
     p.name.toLowerCase().includes(marketQuery.toLowerCase())
   );
 
   // --- Loading and error screens ---
-  if (loading && page !== 'landing') {
+  if (loading && page !== 'landing' && page !== 'select') {
     return <div className="card" style={{ textAlign: 'center' }}><h2>Loading…</h2></div>;
   }
   if (error) {
@@ -159,7 +207,12 @@ export default function App() {
         <div className="card" style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Crypto Tracker</h1>
           <p style={{ marginBottom: '1.5rem' }}>By Fabian Prado Dluzniewski</p>
-          <button className="button" onClick={() => setPage('select')}>Start Tracking</button>
+          <button 
+            className="button" 
+            onClick={() => setPage('select')}
+          >
+            Start Tracking
+          </button>
         </div>
       )}
 
@@ -175,24 +228,48 @@ export default function App() {
               onChange={e => setExchangeQuery(e.target.value)}
             />
           </div>
-          {filteredExchanges.length === 0 ? (
-            <p>No exchanges found for "{exchangeQuery}"</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {filteredExchanges.map(ex => (
-                <li key={ex.id}>
-                  <button
-                    className="btn-secondary exchange-button"
-                    onClick={() => {
-                      setSelectedExchange(ex.name);
-                      setPage('overview');
-                    }}
-                  >
-                    {ex.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          
+          {/* Loading state message */}
+          {exchangesLoading && validExchanges.length === 0 && (
+            <p>Loading exchanges...</p>
+          )}
+          
+          {/* Exchanges list */}
+          {validExchanges.length > 0 && (
+            <>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                {filteredExchanges.map(ex => (
+                  <li key={ex.id}>
+                    <button
+                      className="btn-secondary exchange-button"
+                      onClick={() => {
+                        setSelectedExchange(ex.name);
+                        setPage('overview');
+                      }}
+                    >
+                      {ex.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              
+              {/* Show loading message if still loading more exchanges */}
+              {exchangesLoading && (
+                <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
+                  Loading more exchanges...
+                </p>
+              )}
+              
+              {/* No results message */}
+              {!exchangesLoading && filteredExchanges.length === 0 && (
+                <p>No exchanges found for "{exchangeQuery}"</p>
+              )}
+            </>
+          )}
+          
+          {/* No exchanges at all */}
+          {!exchangesLoading && validExchanges.length === 0 && (
+            <p>No exchanges with markets found. Please try again later.</p>
           )}
         </div>
       )}
@@ -210,7 +287,7 @@ export default function App() {
             />
           </div>
           {filteredMarkets.length === 0 ? (
-            <p>No markets found for "{marketQuery}"</p>
+            <p>No markets found {marketQuery ? `for "${marketQuery}"` : 'with available price data'}</p>
           ) : (
             <table className="table">
               <thead>
