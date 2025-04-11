@@ -7,6 +7,7 @@ import {
 } from '../services/cryptoService';
 
 export function useCryptoData() {
+  // State for lists, overview, trades, loading and errors
   const [exchanges, setExchanges] = useState([]);
   const [markets, setMarkets]     = useState([]);
   const [overview, setOverview]   = useState([]); // [{ exchange, market, price }]
@@ -14,18 +15,22 @@ export function useCryptoData() {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
 
-  // 1. Load exchanges on mount
+  // 1. Load all exchanges once on mount
   useEffect(() => {
-    fetchExchanges().then(setExchanges).catch(setError);
+    fetchExchanges()
+      .then(setExchanges)
+      .catch(setError);
   }, []);
 
-  // 2. When an exchange is selected, load its markets + overview
+  // 2. Fetch markets + overview prices for a given exchange
   async function loadOverview(exchangeId) {
     setLoading(true);
     try {
+      // 2a. Fetch markets list
       const mks = await fetchMarkets(exchangeId);
       setMarkets(mks);
-      // parallel price fetch for each market
+
+      // 2b. For each market, fetch current price in parallel
       const data = await Promise.all(
         mks.map(m =>
           fetchCurrentPrice(exchangeId, m).then(d => ({
@@ -43,7 +48,7 @@ export function useCryptoData() {
     }
   }
 
-  // 3. When a market is clicked, load its trades
+  // 3. Fetch recent trades for a specific market
   async function loadTrades(exchangeId, market) {
     setLoading(true);
     try {
@@ -56,6 +61,7 @@ export function useCryptoData() {
     }
   }
 
+  // Expose state + actions
   return {
     exchanges,
     markets,

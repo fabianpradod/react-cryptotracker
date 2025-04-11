@@ -9,29 +9,29 @@ import {
 } from './services/cryptoService';
 
 export default function App() {
-  // Dark mode
+  // --- Dark mode state & side effect ---
   const [darkMode, setDarkMode] = useState(false);
   useEffect(() => {
     document.documentElement.classList.toggle('dark-mode', darkMode);
   }, [darkMode]);
 
-  // Page state
+  // --- Page navigation state ---
   const [page, setPage] = useState('landing'); // 'landing' | 'select' | 'overview' | 'trades'
   const [selectedExchange, setSelectedExchange] = useState(null);
   const [selectedMarket, setSelectedMarket]     = useState(null);
 
-  // Data & loading/error
+  // --- Data + UI state ---
   const [exchanges, setExchanges] = useState([]);
-  const [priceData, setPriceData] = useState([]);
+  const [priceData, setPriceData] = useState([]); // overview rows
   const [trades, setTrades]       = useState([]);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
 
-  // Search queries
+  // --- Search filters ---
   const [exchangeQuery, setExchangeQuery] = useState('');
   const [marketQuery, setMarketQuery]     = useState('');
 
-  // 1) Load exchanges
+  // 1) Load exchanges on mount
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -46,7 +46,7 @@ export default function App() {
     })();
   }, []);
 
-  // 2) When exchange selected → load overview
+  // 2) When an exchange is selected → load markets + price overview
   useEffect(() => {
     if (!selectedExchange) return;
     (async () => {
@@ -54,11 +54,12 @@ export default function App() {
       try {
         const ex = exchanges.find(e => e.name === selectedExchange);
         const markets = await fetchMarkets(ex.id);
-        // Precheck: no markets?
+        // If no markets, clear overview
         if (markets.length === 0) {
           setPriceData([]);
           return;
         }
+        // Fetch first 20 prices in parallel
         const prices = await Promise.all(
           markets.slice(0, 20).map(async m => {
             const d = await fetchCurrentPrice(ex.id, m);
@@ -80,7 +81,7 @@ export default function App() {
     })();
   }, [selectedExchange, exchanges]);
 
-  // 3) When market selected → load trades
+  // 3) When a market is selected → load its trades
   useEffect(() => {
     if (!selectedExchange || !selectedMarket) return;
     (async () => {
@@ -88,7 +89,6 @@ export default function App() {
       try {
         const ex = exchanges.find(e => e.name === selectedExchange);
         const data = await fetchTrades(ex.id, selectedMarket);
-        // Precheck: no trades?
         setTrades(data.trades || []);
       } catch (e) {
         setError('Failed to load trades');
@@ -98,7 +98,7 @@ export default function App() {
     })();
   }, [selectedExchange, selectedMarket, exchanges]);
 
-  // Back button
+  // Back button handler
   const renderBack = () => (
     <button
       className="btn-secondary back-button"
@@ -118,7 +118,7 @@ export default function App() {
     </button>
   );
 
-  // Filtered lists
+  // Filtered lists based on search queries
   const filteredExchanges = exchanges.filter(e =>
     e.name.toLowerCase().includes(exchangeQuery.toLowerCase())
   );
@@ -127,7 +127,7 @@ export default function App() {
     p.name.toLowerCase().includes(marketQuery.toLowerCase())
   );
 
-  // Loading & error UI
+  // --- Loading and error screens ---
   if (loading && page !== 'landing') {
     return <div className="card" style={{ textAlign: 'center' }}><h2>Loading…</h2></div>;
   }
@@ -140,9 +140,10 @@ export default function App() {
     );
   }
 
+  // --- Main render ---
   return (
     <div id="root">
-      {/* Dark toggle */}
+      {/* Dark mode toggle */}
       <div
         className="dark-mode-toggle"
         onClick={() => setDarkMode(d => !d)}
@@ -153,7 +154,7 @@ export default function App() {
 
       {page !== 'landing' && renderBack()}
 
-      {/* 1) Landing */}
+      {/* 1) Landing page */}
       {page === 'landing' && (
         <div className="card" style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Crypto Tracker</h1>
@@ -174,7 +175,6 @@ export default function App() {
               onChange={e => setExchangeQuery(e.target.value)}
             />
           </div>
-          {/* Precheck: no exchanges */}
           {filteredExchanges.length === 0 ? (
             <p>No exchanges found for "{exchangeQuery}"</p>
           ) : (
@@ -197,7 +197,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 3) Overview Markets */}
+      {/* 3) Markets Overview */}
       {page === 'overview' && (
         <div className="card table-card">
           <h2>{selectedExchange} – Markets</h2>
@@ -209,7 +209,6 @@ export default function App() {
               onChange={e => setMarketQuery(e.target.value)}
             />
           </div>
-          {/* Precheck: no markets */}
           {filteredMarkets.length === 0 ? (
             <p>No markets found for "{marketQuery}"</p>
           ) : (
@@ -251,7 +250,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 4) Trades */}
+      {/* 4) Trades List */}
       {page === 'trades' && (
         <div className="card table-card">
           <h2>{selectedExchange} – {selectedMarket} Trades</h2>
