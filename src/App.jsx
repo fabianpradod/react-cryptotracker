@@ -177,7 +177,12 @@ export default function App() {
 
   // --- Loading and error screens ---
   if (loading && page !== 'landing' && page !== 'select') {
-    return <div className="card" style={{ textAlign: 'center' }}><h2>Loading…</h2></div>;
+    return (
+      <div className="card loading-screen">
+        <div className="spinner" />
+        <h2>Loading…</h2>
+      </div>
+    );
   }
   if (error) {
     return (
